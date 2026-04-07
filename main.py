@@ -2,6 +2,14 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from google.cloud import bigquery
 
 app = FastAPI()
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 PROJECT_ID = "mgmt-54500-sp2026"
 DATASET = "property_mgmt"
