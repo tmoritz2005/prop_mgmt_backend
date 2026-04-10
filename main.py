@@ -1,9 +1,9 @@
 from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
 from google.cloud import bigquery
 from pydantic import BaseModel
 from typing import Optional
 from datetime import date
-
 app = FastAPI()
 
 app.add_middleware(
