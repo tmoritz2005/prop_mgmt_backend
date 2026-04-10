@@ -4,6 +4,7 @@ from google.cloud import bigquery
 from pydantic import BaseModel
 from typing import Optional
 from datetime import date
+
 app = FastAPI()
 
 app.add_middleware(
@@ -12,6 +13,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 PROJECT_ID = "mgmt-54500-sp2026"
 DATASET = "property_mgmt"
 
