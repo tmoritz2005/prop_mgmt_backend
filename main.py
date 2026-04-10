@@ -1,8 +1,10 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from google.cloud import bigquery
+from pydantic import BaseModel
+from typing import Optional
+from datetime import date
 
 app = FastAPI()
-from fastapi.middleware.cors import CORSMiddleware
 
 app.add_middleware(
     CORSMiddleware,
@@ -10,74 +12,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-PROJECT_ID = "mgmt-54500-sp2026"
-DATASET = "property_mgmt"
-
-
-# ---------------------------------------------------------------------------
-# Dependency: BigQuery client
-# ---------------------------------------------------------------------------
-
-def get_bq_client():
-    client = bigquery.Client()
-    try:
-        yield client
-    finally:
-        client.close()
-
-
-# ---------------------------------------------------------------------------
-# Properties
-# ---------------------------------------------------------------------------
-
-@app.get("/properties")
-def get_properties(bq: bigquery.Client = Depends(get_bq_client)):
-    """
-    Returns all properties in the database.
-    """
-    query = f"""
-        SELECT
-            property_id,
-            name,
-            address,
-            city,
-            state,
-            postal_code,
-            property_type,
-            tenant_name,
-            monthly_rent
-        FROM `{PROJECT_ID}.{DATASET}.properties`
-        ORDER BY property_id
-    """
-
-    try:
-        results = bq.query(query).result()
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Database query failed: {str(e)}"
-        )
-
-    properties = [dict(row) for row in results]
-    return properties
-
-
-
-
-
-
-
-
-
-from fastapi import FastAPI, Depends, HTTPException, status
-from google.cloud import bigquery
-from pydantic import BaseModel
-from typing import Optional
-from datetime import date
-
-app = FastAPI()
-
 PROJECT_ID = "mgmt-54500-sp2026"
 DATASET = "property_mgmt"
 
@@ -397,31 +331,6 @@ def get_summary(property_id: int, bq: bigquery.Client = Depends(get_bq_client)):
             (SELECT COALESCE(SUM(amount), 0) FROM `{PROJECT_ID}.{DATASET}.expenses` WHERE property_id = {property_id}) AS total_expenses,
             (SELECT COALESCE(SUM(amount), 0) FROM `{PROJECT_ID}.{DATASET}.income` WHERE property_id = {property_id}) -
             (SELECT COALESCE(SUM(amount), 0) FROM `{PROJECT_ID}.{DATASET}.expenses` WHERE property_id = {property_id}) AS net
-    """
-    try:
-        results = list(bq.query(query).result())
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail=f"Database query failed: {str(e)}")
-    return dict(results[0])
-
-
-@app.get("/properties/{property_id}/profit_margin")
-def get_profit_margin(property_id: int, bq: bigquery.Client = Depends(get_bq_client)):
-    get_property(property_id, bq)
-
-    query = f"""
-        WITH financials AS (
-            SELECT
-                (SELECT COALESCE(SUM(amount), 0) FROM `{PROJECT_ID}.{DATASET}.income` WHERE property_id = {property_id}) AS total_income,
-                (SELECT COALESCE(SUM(amount), 0) FROM `{PROJECT_ID}.{DATASET}.expenses` WHERE property_id = {property_id}) AS total_expenses
-        )
-        SELECT
-            CASE
-                WHEN total_income = 0 THEN 0.0
-                ELSE ROUND(((total_income - total_expenses) / total_income) * 100, 2)
-            END AS profit_margin_percent
-        FROM financials
     """
     try:
         results = list(bq.query(query).result())
